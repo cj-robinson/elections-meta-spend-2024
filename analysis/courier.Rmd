@@ -181,11 +181,11 @@ meta_ads_expanded %>%
     .default = "Metric Media")) %>% 
   filter(page_name == "The Keystone") %>% 
   ggplot(aes(x = female_total)) + 
-  geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), bins =30, fill = "#08519C")+
+  geom_histogram(bins =30, fill = "#08519C")+
   geom_vline(aes(xintercept = .5), linetype="dotted") +
   labs(title = "Courier's Pennsylvania outlet targeted ads more toward women", 
-       subtitle = "The Keystone 2024 Meta ad count by percentage targeting women") +
-  xlab("Percentage of Women Targeted") +
+       subtitle = "The Keystone 2024 Meta ad count by percentage each ad targeting women") +
+  xlab("Percentage of Women Targeting") +
   theme_minimal() +
   scale_x_continuous(labels = scales::percent_format()) +
   theme(axis.title.y=element_blank(),
@@ -197,10 +197,10 @@ meta_ads_expanded %>%
         axis.text = element_text(size = 14),
         plot.title = element_text(size = 20),
         plot.subtitle = element_text(size = 16)) + 
-  annotate("text", x = 0.34, y = .13, label = "Most ads targeted women", size = 6, hjust = 1) +
-  annotate("curve", x = 0.35, y = .13, xend = 0.55, yend = .15, curvature = - 0.25, arrow = arrow(length = unit(0.5, "cm"))) +
-  annotate("text", x = 0.43, y = .07, label = "Some targeted only men", size = 6, hjust = 1) +
-  annotate("curve", x = 0.3, y = .056, xend = 0.03, yend = .03, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
+  annotate("text", x = 0.34, y = 35, label = "Most ads targeted more women", size = 6, hjust = 1) +
+  annotate("curve", x = 0.35, y = 35, xend = 0.55, yend = 33, curvature = - 0.25, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 0.43, y = 17, label = "Some targeted only men", size = 6, hjust = 1) +
+  annotate("curve", x = 0.3, y = 15, xend = 0.03, yend = 6, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
 
 ggsave("../img/keystone_dist.png", height = 6, width = 10)
 
@@ -308,4 +308,57 @@ meta_ads_expanded %>%
   group_by(day = date(ad_delivery_start_time)) %>% 
   summarize(low_spend = sum(low_spend), 
             count = n())
+```
+
+
+# Alternative targeting image
+```{r}
+meta_ads_expanded %>% 
+    filter(ad_delivery_start_time >= '2024-01-01') %>% 
+  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
+  mutate(network = case_when(
+    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    page_name == "The Morning Mirror" ~ "Star Spangled Media",
+    #anything not above is considered metric media
+    .default = "Metric Media")) %>% 
+  filter(page_name == "The Keystone") %>% 
+  mutate(female_total = case_when(
+    female_total <= 0.1 ~ 1,
+    female_total <= 0.2 ~ 2,
+    female_total <= 0.3 ~ 3,
+    female_total <= 0.4 ~ 4,
+    female_total <= 0.5 ~ 5,
+    female_total <= 0.6 ~ 6,
+    female_total <= 0.7 ~ 7,
+    female_total <= 0.8 ~ 8,
+    female_total <= 0.9 ~ 9,
+    TRUE ~ 10
+  ))  %>% 
+  group_by(female_total) %>% 
+  summarize(low_spend = sum(low_spend, na.rm = TRUE)) %>% 
+  ggplot(aes(x = female_total / 10, y = low_spend)) + 
+  geom_bar(stat = "identity",  fill = "#08519C") + 
+  # geom_vline(aes(xintercept = .5), linetype="dotted") +
+  labs(title = "Courier's Pennsylvania outlet targeted ads more toward women", 
+       subtitle = "The Keystone 2024 Meta ad spend by percentage targeting women") +
+  xlab("Percentage of Women Targeted") +
+  theme_minimal() +
+   scale_x_continuous(labels = scales::percent_format()) +
+   scale_y_continuous(labels = scales::label_dollar()) +
+  theme(axis.title.y=element_blank(),
+        legend.position="none",
+        axis.title.x = element_text(size = 14),
+        axis.line.x = element_line(),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 14),
+        plot.title = element_text(size = 20),
+        plot.subtitle = element_text(size = 16)) 
+  # annotate("text", x = 0.34, y = .13, label = "Most ads targeted women", size = 6, hjust = 1) +
+  # annotate("curve", x = 0.35, y = .13, xend = 0.55, yend = .15, curvature = - 0.25, arrow = arrow(length = unit(0.5, "cm"))) +
+  # annotate("text", x = 0.43, y = .07, label = "Some targeted only men", size = 6, hjust = 1) +
+  # annotate("curve", x = 0.3, y = .056, xend = 0.03, yend = .03, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
+
+
+ggsave("../img/keystone_dist_alt.png", height = 6, width = 10)
 ```
