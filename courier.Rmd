@@ -21,7 +21,7 @@ meta_ads_raw <- read_csv("/Users/cjrobinson/data/meta_ads/consolidated_body_1103
 
 ```{r}
 meta_ads_raw %>% 
-    filter(ad_creation_time >= '2024-07-01') %>% 
+    filter(ad_creation_time >= '2024-01-01') %>% 
   #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
   mutate(network = case_when(
     page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
@@ -30,17 +30,18 @@ meta_ads_raw %>%
     page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
     #anything not above is considered metric media
     .default = "Metric Media")) %>% 
+  mutate(courier_flag = ifelse(network == "Courier Newsroom", "Courier Newsroom", "Other Networks")) %>% 
   #group by week and network
-  group_by(week = floor_date(ymd(ad_delivery_start_time), unit = "week"), network) %>% 
+  group_by(network, courier_flag) %>% 
   #sum spend (we'll use low spend as a minimum)
   summarize(upper_sum = sum(high_spend),
-            low_sum = sum(low_spend),
+            low_sum = sum(low_spend, na.rm = TRUE),
             avg_sum = (sum(high_spend) + sum(low_spend))/2) %>% 
-  ggplot(aes(x = week, y = avg_sum, fill = reorder(network, desc(low_sum)))) + 
-  geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
+  ggplot(aes(x = courier_flag, y = low_sum, fill = reorder(network, desc(low_sum)))) + 
+  geom_bar(stat = "identity", position = "stack") +
   scale_y_continuous(label = scales::dollar_format(scale = .000001, suffix = "M")) +
-  labs(title = "Courier Newsroom Political Ads Skyrocketed in October", 
-       subtitle = "2024 weekly Meta ad spend by week advertiser started delivering ad", 
+  labs(title = "Courier Massively Outspent Other Networks in 2024", 
+       subtitle = "2024 total Meta ad by network", 
        fill = "News Network") +
   theme_minimal() +
   theme(axis.title=element_blank(),
@@ -49,11 +50,18 @@ meta_ads_raw %>%
         panel.grid.minor = element_blank()) +
   scale_fill_manual(values = c(
     "Courier Newsroom" = "#E9381F",     
-    "Star Spangled Media" = "#2F4F4F",  
-    "Metric Media" = "#696969",
-    "Star News" = "#C0C0C0", 
+    "Star Spangled Media" = "#757575",  
+    "Metric Media" = "#9E9E9E",
+    "Star News" = "#BDBDBD", 
     "American Independent" = "#E5E4E2"
-  ))  # Add annotation for the high bar on the right
+  ))  +
+    theme(axis.title=element_blank(),
+        axis.line.y = element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 14),
+        plot.title = element_text(size = 20),
+        plot.subtitle = element_text(size = 16)) # Add annotation for the high bar on the right
   # Add annotation in top-left white space, centered on the left side
   # annotate("text", x = as.Date("2024-07-01"), y = 3200000, 
   #          label = "Courier spent at least $4M in the last week Meta allowed political/social ads", hjust = 0, size = 4) +
@@ -61,6 +69,7 @@ meta_ads_raw %>%
   #          y = 3200000, 
   #          yend = 3200000, 
   #          arrow = arrow(length = unit(0.2, "cm")))
+ggsave("courier_comp.png", height = 6, width = 10)
 
 
 ```
@@ -262,7 +271,7 @@ meta_ads_raw %>%
   geom_bar(stat = "identity") +
   scale_y_continuous(label = scales::dollar_format(scale = .000001, suffix = "M", accuracy = .1)) +
   labs(title = "Courier Concentrated Spending in Pennsyvania and North Carolina", 
-       subtitle = "2024 October Courier Meta ad spend by page and month" ) +
+       subtitle = "2024 weekly Meta ad spend by Courier" ) +
   scale_fill_manual(name = "Courier Outlet", 
                       labels=c("Iowa Starting Line" = "Iowa - Iowa Starting Line",
                             "Granite Post" = "New Hampshire - Granite Post",
