@@ -172,7 +172,9 @@ meta_ads_expanded <- meta_ads_expanded  %>%  mutate(
   )
 
 meta_ads_expanded %>% 
-    filter(ad_delivery_start_time >= '2024-01-01') %>% 
+    filter(ad_delivery_start_time >= '2024-01-01', 
+           #make sure null demographic info is taken out
+           male_total + female_total > 0) %>% 
   # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
   mutate(network = case_when(
     page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
@@ -186,9 +188,9 @@ meta_ads_expanded %>%
   ggplot(aes(x = female_total)) + 
   geom_histogram(bins =30, fill = "#08519C")+
   geom_vline(aes(xintercept = .5), linetype="dotted") +
-  labs(title = "Courier's Pennsylvania outlet targeted ads toward women more than men", 
-       subtitle = "The Keystone 2024 Meta ad count by women targeted as a proportion of total audience") +
-  xlab("Percentage of Women Targeting") +
+  labs(title = "The Keystone's Meta ads reached more women than men", 
+       subtitle = "Ad count for Courier's newsroom by gender reach") +
+  xlab("Percentage of Women Reached of Total Population") +
   theme_minimal() +
   scale_x_continuous(labels = scales::percent_format()) +
   theme(axis.title.y=element_blank(),
@@ -200,8 +202,8 @@ meta_ads_expanded %>%
         axis.text = element_text(size = 14),
         plot.title = element_text(size = 20),
         plot.subtitle = element_text(size = 16)) + 
-  annotate("text", x = 0.34, y = 35, label = "Most ads targeted more women", size = 6, hjust = 1) +
-  annotate("curve", x = 0.35, y = 35, xend = 0.55, yend = 33, curvature = - 0.25, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 0.34, y = 35, label = "Most ads reached more women", size = 6, hjust = 1) +
+  annotate("curve", x = 0.35, y = 35, xend = 0.55, yend = 35, curvature = - 0.25, arrow = arrow(length = unit(0.5, "cm"))) +
   annotate("text", x = 0.43, y = 17, label = "Some targeted only men", size = 6, hjust = 1) +
   annotate("curve", x = 0.3, y = 15, xend = 0.03, yend = 6, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
 
@@ -297,11 +299,13 @@ Quote: 16 ads were targeting exclusively toward women
 
 ```{r}
 meta_ads_expanded %>% 
-  filter(ad_delivery_start_time >= '2024-01-01',
+  filter(ad_delivery_start_time >= '2024-10-01',
          page_name == "The Keystone",
-         female_total==0) %>% 
+         female_total + male_total > 0) %>% 
+  group_by(male_only = ifelse(female_total==0, "male only","other"))%>% 
   summarize(count = n(),
-            low_spend = sum(low_spend, na.rm = TRUE))
+            low_spend = sum(low_spend, na.rm = TRUE), 
+            high_spend = sum(high_spend, na.rm = TRUE))
 ```
 
 # Relentless
@@ -323,7 +327,7 @@ meta_ads_expanded %>%
 
 ```{r}
 meta_ads_expanded %>% 
-    filter(ad_delivery_start_time >= '2024-01-01') %>% 
+    filter(ad_delivery_start_time >= '2024-10-01') %>% 
   #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
   mutate(network = case_when(
     page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
@@ -348,7 +352,7 @@ meta_ads_expanded %>%
   ggplot(aes(x = female_total / 10, y = low_spend)) + 
   geom_bar(stat = "identity",  fill = "#08519C") + 
   # geom_vline(aes(xintercept = .5), linetype="dotted") +
-  labs(title = "Courier's Pennsylvania outlet targeted ads more toward women", 
+  labs(title = "Courier  Pennsylvania outlet's reached ads more toward women", 
        subtitle = "The Keystone 2024 Meta ad spend by percentage targeting women") +
   xlab("Percentage of Women Targeted") +
   theme_minimal() +
