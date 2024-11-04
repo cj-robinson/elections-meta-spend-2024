@@ -3,7 +3,7 @@ This repo holds files to pull, analyze and visualizations for the 2024 Meta Ad s
 # Pulling Meta Ad Library Data from the API
 To analyze data from Courier Newsroom and other outlets since 2020, we utilized a copy of the Meta Ad repo found here: https://github.com/Lejo1/facebook_ad_library.
 
-To pull from the API, run import_requests.py first to create CSVs of the ads from each page_id listed. It will also parse low/high spend and impression ranges into seperate columns. Then run consolitdate.py to combine the CSVs into one. Make sure to change any folders in the top of the files.
+To pull from the API, run import_requests.py in the api_pull folder first to create CSVs of the ads from each page_id listed. It will also parse low/high spend and impression ranges into seperate columns. Then run consolitdate.py to combine the CSVs into one. Make sure to change any folders in the top of the files.
 
 To get page IDs, we searched for Courier Newsroom and any of their local newsrooms in the [Meta Ad Library Report](https://www.facebook.com/ads/library/report/?source=nav-header) that had any spending in the past 90 days (as of November 3). For Metric Media and other networks, we followed the same logic. For Courier newsrooms, we found that the 'Disclaimer' could be either Courier Newsroom or the name of the local paper itself. Because of this, we may be undercounting papers from other networks that list themselves as the 'Disclaimer' and have no listed connection to the broader network. 
 
