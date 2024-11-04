@@ -11,6 +11,8 @@ library(janitor)
 library(lubridate)
 library(ggthemes)
 library(gt)
+library(RColorBrewer)
+
 ```
 
 # Read in data
@@ -21,49 +23,53 @@ meta_ads_raw <- read_csv("/Users/cjrobinson/data/meta_ads/consolidated_body_1103
 
 ```{r}
 meta_ads_raw %>% 
-    filter(ad_creation_time >= '2024-01-01') %>% 
-  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
+  filter(year(ad_creation_time) %in% c(2020, 2022, 2024)) %>%
+  # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
   mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
     page_name == "The Morning Mirror" ~ "Star Spangled Media",
     page_name == "Olean Star" ~ "Star News",
     page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
-  mutate(courier_flag = ifelse(network == "Courier Newsroom", "Courier Newsroom", "Other Networks")) %>% 
-  #group by week and network
-  group_by(network, courier_flag) %>% 
-  #sum spend (we'll use low spend as a minimum)
+    # Anything not above is considered metric media
+    .default = "Metric Media"
+  )) %>%
+  mutate(courier_flag = ifelse(network == "Courier Newsroom", "Courier Newsroom", "Other"),
+         year = year(ad_creation_time)) %>%
+  # Group by week and network
+  group_by(network, courier_flag, year) %>%
+  # Sum spend (we'll use low spend as a minimum)
   summarize(upper_sum = sum(high_spend),
             low_sum = sum(low_spend, na.rm = TRUE),
-            avg_sum = (sum(high_spend) + sum(low_spend))/2) %>% 
-  ggplot(aes(x = courier_flag, y = low_sum, fill = reorder(network, desc(low_sum)))) + 
-  geom_bar(stat = "identity", position = "stack") +
+            avg_sum = (sum(high_spend) + sum(low_spend))/2) %>%
+  ungroup() %>%
+  complete(year = c(2020, 2022, 2024), network, fill = list(low_sum = 0, upper_sum = 0, avg_sum = 0)) %>%
+  ggplot(aes(x = factor(year), y = low_sum, fill = reorder(network, desc(low_sum)))) +
+  geom_bar(stat = "identity", position = position_dodge(width = 1), width = 1) +
   scale_y_continuous(label = scales::dollar_format(scale = .000001, suffix = "M")) +
   labs(title = "Courier Massively Outspent Other Networks", 
-       subtitle = "Total spending on Meta ads by network, 2024", 
-       fill = "Network") +
+       subtitle = "Total spending on Meta ads by network",
+       fill = "Network",
+       x = "Year") +
   theme_minimal() +
-  theme(axis.title=element_blank(),
-        axis.line.x= element_blank(),
-        panel.grid.major.x=element_blank(),
-        panel.grid.minor = element_blank()) +
+  theme(
+    axis.title = element_blank(),
+    axis.line.x = element_line(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(size = 14),
+    axis.text.x = element_text(size = 14),
+    plot.title = element_text(size = 20),
+    plot.subtitle = element_text(size = 16),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14)
+  ) +
   scale_fill_manual(values = c(
-    "Courier Newsroom" = "#E9381F",     
-    "Star Spangled Media" = "#757575",  
+    "Courier Newsroom" = "#E9381F",
+    "Star Spangled Media" = "#757575",
     "Metric Media" = "#9E9E9E",
-    "Star News" = "#BDBDBD", 
+    "Star News" = "#BDBDBD",
     "American Independent" = "#E5E4E2"
-  ))  +
-  theme(axis.title=element_blank(),
-        axis.line.x = element_blank(),
-        panel.grid.major.x=element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text = element_text(size = 14),
-        plot.title = element_text(size = 20),
-        plot.subtitle = element_text(size = 16),
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14))
+  ))
 
 ggsave("courier_comp.png", height = 6, width = 10)
 
@@ -216,20 +222,28 @@ meta_ads_expanded %>%
     .default = "Metric Media")) %>% 
   filter(page_name == "The Keystone") %>% 
   ggplot(aes(x = female_total)) + 
-  geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), bins =30)+
-  geom_vline(aes(xintercept = .5)) +
-  labs(title = "Newsrooms like The Keystone targeted more toward women, with \ncertain campaigns focusing on men", 
-       subtitle = "The Keystone 2024 Meta ads by percentage targeting women") +
+  geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), bins =30, fill = "#08519C")+
+  geom_vline(aes(xintercept = .5), linetype="dotted") +
+  labs(title = "Courier's Pennsylvania outlet targeted ads more toward women", 
+       subtitle = "The Keystone 2024 Meta ad count by percentage targeting women") +
+  xlab("Percentage of Women Targeted") +
   theme_minimal() +
   scale_x_continuous(labels = scales::percent_format()) +
-  theme(axis.title=element_blank(),
+  theme(axis.title.y=element_blank(),
         legend.position="none",
-        axis.line.x = element_blank(),
+        axis.title.x = element_text(size = 14),
+        axis.line.x = element_line(),
         panel.grid.major.x=element_blank(),
         panel.grid.minor = element_blank(),
         axis.text = element_text(size = 14),
         plot.title = element_text(size = 20),
-        plot.subtitle = element_text(size = 16))
+        plot.subtitle = element_text(size = 16)) + 
+  annotate("text", x = 0.34, y = .13, label = "Most ads targeted women", size = 6, hjust = 1) +
+  annotate("curve", x = 0.35, y = .13, xend = 0.55, yend = .15, curvature = - 0.25, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 0.43, y = .07, label = "Some targeted only men", size = 6, hjust = 1) +
+  annotate("curve", x = 0.3, y = .056, xend = 0.03, yend = .03, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
+
+
 
 
 ggsave("keystone_dist.png", height = 6, width = 10)
@@ -264,11 +278,23 @@ meta_ads_raw %>%
   #sum spend (we'll use low spend as a minimum)
   summarize(low_sum = sum(low_spend, na.rm = TRUE)) %>% 
   ggplot(aes(x = week, y = low_sum, fill = reorder(page_name, (low_sum)))) + 
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity", color = "white") +
   scale_y_continuous(label = scales::dollar_format(scale = .000001, suffix = "M", accuracy = .1)) +
-  labs(title = "Courier Concentrated Spending in Pennsyvania and North Carolina", 
+  labs(title = "Courier Concentrated Spending in Pennsylvania and North Carolina", 
        subtitle = "Weekly Meta ad spend by Courier, 2024" ) +
-  scale_fill_manual(name = "Courier Outlet", 
+  scale_fill_manual(
+                  #values = c("#1F55E9", "#1F7CE9", "#1FA3E9", "#1FE9CA", "#E9991F", "#E95D1F", "#E93F1F", "#E91F1F")
+#                   values = c("#dd1d1d",
+# "#e0004d",
+# "#d61b75",
+# "#be3a97",
+# "#9d52ae",
+# "#7663b9",
+# "#4d6eb9",
+# "#2775af")
+                  ) +
+  scale_fill_brewer(palette = "Blues",
+                    name = "Courier Outlet", 
                       labels=c("Iowa Starting Line" = "Iowa - Iowa Starting Line",
                             "Granite Post" = "New Hampshire - Granite Post",
                             "UpNorthNews" = "Wisconsin - UpNorthNews",
@@ -276,8 +302,7 @@ meta_ads_raw %>%
                             "The Copper Courier" = "Arizona - The Copper Courier",
                             "The 'Gander Newsroom" = "Michigan - The 'Gander",
                             "Cardinal & Pine" = "North Carolina - Cardinal & Pine",
-                            "The Keystone" = "Pennsylvania - The Keystone"),
-                  values = c("#1F55E9", "#1F7CE9", "#1FA3E9", "#1FE9CA", "#E9991F", "#E95D1F", "#E93F1F", "#E91F1F")) +
+                            "The Keystone" = "Pennsylvania - The Keystone")) +
   theme_minimal() +
   theme(axis.title=element_blank(),
         axis.line.x = element_blank(),
@@ -285,8 +310,45 @@ meta_ads_raw %>%
         panel.grid.minor = element_blank(),
         axis.text = element_text(size = 14),
         plot.title = element_text(size = 20),
-        plot.subtitle = element_text(size = 16)) 
+        plot.subtitle = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 14)) 
 
 ggsave("newsroom_spend_2.png", height = 6, width = 10)
 
+```
+
+
+# Looking into currently running ads
+
+```{r}
+meta_ads_expanded %>% 
+    filter(ad_delivery_start_time >= '2024-01-01') %>% 
+  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
+  mutate(network = case_when(
+    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    page_name == "The Morning Mirror" ~ "Star Spangled Media",
+    #anything not above is considered metric media
+    .default = "Metric Media")) %>% 
+  filter(network == "Courier Newsroom",
+         is.na(ad_delivery_end_time) | ad_delivery_end_time > "2024-11-03") %>% 
+  summarize(low_spend = sum(low_spend), 
+            count = n())
+```
+
+
+```{r}
+meta_ads_expanded %>% 
+    filter(ad_delivery_start_time >= '2024-01-01') %>% 
+  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
+  mutate(network = case_when(
+    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    page_name == "The Morning Mirror" ~ "Star Spangled Media",
+    #anything not above is considered metric media
+    .default = "Metric Media")) %>% 
+  filter(network == "Courier Newsroom",
+         is.na(ad_delivery_end_time) | ad_delivery_end_time > "2024-11-03") %>% 
+  group_by(day = date(ad_delivery_start_time)) %>% 
+  summarize(low_spend = sum(low_spend), 
+            count = n())
 ```
