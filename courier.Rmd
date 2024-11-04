@@ -21,6 +21,13 @@ library(RColorBrewer)
 meta_ads_raw <- read_csv("/Users/cjrobinson/data/meta_ads/consolidated_body_110324/consolidated_ads_20241103_173021.csv") %>% clean_names()
 ```
 
+
+# Visualizations
+
+#-----
+
+# Courier comparisons
+
 ```{r}
 meta_ads_raw %>% 
   filter(year(ad_creation_time) %in% c(2020, 2022, 2024)) %>%
@@ -113,56 +120,7 @@ gtsave(table_viz, "table.png")
 ```
 
 
-
-
-
-# Chart 3 - by paper/state
-
-```{r}
-meta_ads_raw %>% 
-    filter(ad_delivery_start_time >= '2024-10-01') %>% 
-  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
-  mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
-    page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
-  filter(network == "Courier Newsroom") %>% 
-  #group by week and network
-  group_by(page_name) %>% 
-  #sum spend (we'll use low spend as a minimum)
-  summarize(low_sum = sum(low_spend, na.rm = TRUE)) %>% 
-  ggplot(aes(x = reorder(page_name, low_sum), y = low_sum, fill = "#E9381F")) + 
-  geom_bar(stat = "identity") +
-  scale_y_continuous(label = scales::dollar_format(scale = .000001, suffix = "M", accuracy = .1)) +
-  labs(title = "Courier Newsroom Concentrated Spending in\nPennsyvania and North Carolina", 
-       subtitle = "2024 October Meta ad spend by page") +
-  scale_x_discrete(labels=c("The Keystone"="Pennsylvania - The Keystone",
-                            "Cardinal & Pine"="North Carolina - Cardinal & Pine", 
-                            "The 'Gander Newsroom"="Michigan - The 'Gander", 
-                            "The Copper Courier"= "Arizona - The Copper Courier",
-                            "The Nevadan"="Nevada - The Nevadan",
-                            "UpNorthNews"="Wisconsin - UpNorthNews",
-                            "Iowa Starting Line" = "Iowa - Iowa Starting Line",
-                            "Granite Post"="New Hampshire - Granite Post")) +
-  coord_flip()+ 
-  theme_minimal() +
-  theme(axis.title=element_blank(),
-        legend.position="none",
-        axis.line.y = element_blank(),
-        panel.grid.major.y=element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text = element_text(size = 14),
-        plot.title = element_text(size = 20),
-        plot.subtitle = element_text(size = 16)) 
-
-ggsave("newsroom_spend.png", height = 6, width = 10)
-
-```
-
-
-
-# Chart 4 - targeting
+# Chart 3 - Targetings
 
 ```{r}
 library(jsonlite)
@@ -243,20 +201,27 @@ meta_ads_expanded %>%
   annotate("text", x = 0.43, y = .07, label = "Some targeted only men", size = 6, hjust = 1) +
   annotate("curve", x = 0.3, y = .056, xend = 0.03, yend = .03, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
 
-
-
-
 ggsave("keystone_dist.png", height = 6, width = 10)
 
 ```
 
+
+# Other facts
+
+#-----
+
+# Export data for inspection of GOTV
+
+Quote: 35 of the 48 Meta ads in October which cost at least $30,000 each directed users to voting resources, often linking to guides included in each newsroom’s website. These ads cost the newsrooms at least $1.5 million in total. 
+
+Pulled from body and facebook ad library manually to code each of the top 48 ads in Excel sheet linked included in Github
 
 ```{r}
 meta_ads_expanded %>% 
     filter(ad_delivery_start_time >= '2024-10-01',
            low_spend >= 10000) %>% 
     arrange(desc(low_spend)) %>% 
-  write_csv("top15spend_.csv")
+  write_csv("top_oct_ad_spends.csv")
 ```
 
 
@@ -282,17 +247,6 @@ meta_ads_raw %>%
   scale_y_continuous(label = scales::dollar_format(scale = .000001, suffix = "M", accuracy = .1)) +
   labs(title = "Courier Concentrated Spending in Pennsylvania and North Carolina", 
        subtitle = "Weekly Meta ad spend by Courier, 2024" ) +
-  scale_fill_manual(
-                  #values = c("#1F55E9", "#1F7CE9", "#1FA3E9", "#1FE9CA", "#E9991F", "#E95D1F", "#E93F1F", "#E91F1F")
-#                   values = c("#dd1d1d",
-# "#e0004d",
-# "#d61b75",
-# "#be3a97",
-# "#9d52ae",
-# "#7663b9",
-# "#4d6eb9",
-# "#2775af")
-                  ) +
   scale_fill_brewer(palette = "Blues",
                     name = "Courier Outlet", 
                       labels=c("Iowa Starting Line" = "Iowa - Iowa Starting Line",
@@ -320,6 +274,8 @@ ggsave("newsroom_spend_2.png", height = 6, width = 10)
 
 
 # Looking into currently running ads
+
+Quote: Before the final cut-off date for launching political ads, Courier spent around $2.4 million on over 400 ads that will continue to run during the election. 
 
 ```{r}
 meta_ads_expanded %>% 
