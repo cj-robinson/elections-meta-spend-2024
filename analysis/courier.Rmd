@@ -18,13 +18,13 @@ library(RColorBrewer)
 # Read in data
 
 ```{r}
-meta_ads_raw <- read_csv("/Users/cjrobinson/data/meta_ads/consolidated_body_110324/consolidated_ads_20241103_173021.csv") %>% clean_names()
+meta_ads_raw <- read_csv("../data/consolidated_ads_20241103_173021.csv") %>% clean_names()
 ```
 
 
 # Visualizations
 
-#-----
+# -----
 
 # Courier comparisons
 
@@ -78,7 +78,7 @@ meta_ads_raw %>%
     "American Independent" = "#E5E4E2"
   ))
 
-ggsave("courier_comp.png", height = 6, width = 10)
+ggsave("../img/courier_comp.png", height = 6, width = 10)
 
 
 ```
@@ -86,7 +86,7 @@ ggsave("courier_comp.png", height = 6, width = 10)
 # Chart 2 - Meta table
 
 ```{r}
-meta_ad_report <- read_csv("/Users/cjrobinson/data/meta_ads/FacebookAdLibraryReport_2024-10-30_US_last_30_days (1)/FacebookAdLibraryReport_2024-10-30_US_last_30_days_advertisers.csv") %>% clean_names()
+meta_ad_report <- read_csv("../data/FacebookAdLibraryReport_2024-10-30_US_last_30_days_advertisers.csv") %>% clean_names()
 
 table <- meta_ad_report %>% 
   mutate(categorize_page = case_when(
@@ -115,8 +115,9 @@ table_viz <- table %>%
     ),
     fn = function(x) paste0("<b>", x, "</b>"))
 
+table_viz
 
-gtsave(table_viz, "table.png")
+gtsave(table_viz, "../img/table.png")
 ```
 
 
@@ -201,32 +202,13 @@ meta_ads_expanded %>%
   annotate("text", x = 0.43, y = .07, label = "Some targeted only men", size = 6, hjust = 1) +
   annotate("curve", x = 0.3, y = .056, xend = 0.03, yend = .03, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
 
-ggsave("keystone_dist.png", height = 6, width = 10)
+ggsave("../img/keystone_dist.png", height = 6, width = 10)
 
 ```
 
 
-# Other facts
 
-#-----
-
-# Export data for inspection of GOTV
-
-Quote: 35 of the 48 Meta ads in October which cost at least $30,000 each directed users to voting resources, often linking to guides included in each newsroom’s website. These ads cost the newsrooms at least $1.5 million in total. 
-
-Pulled from body and facebook ad library manually to code each of the top 48 ads in Excel sheet linked included in Github
-
-```{r}
-meta_ads_expanded %>% 
-    filter(ad_delivery_start_time >= '2024-10-01',
-           low_spend >= 10000) %>% 
-    arrange(desc(low_spend)) %>% 
-  write_csv("top_oct_ad_spends.csv")
-```
-
-
-
-# Chart 5 - Monthly by Page Breakout for Courier
+# Chart 4 - Monthly by Page Breakout for Courier
 
 ```{r}
 meta_ads_raw %>% 
@@ -268,8 +250,27 @@ meta_ads_raw %>%
         legend.text = element_text(size = 14),
         legend.title = element_text(size = 14)) 
 
-ggsave("newsroom_spend_2.png", height = 6, width = 10)
+ggsave("../img/courier_state_spend.png", height = 6, width = 10)
 
+```
+
+
+# Other analysis
+
+#-----
+
+# Export data for inspection of GOTV
+
+Quote: 35 of the 48 Meta ads in October which cost at least $30,000 each directed users to voting resources, often linking to guides included in each newsroom’s website. These ads cost the newsrooms at least $1.5 million in total. 
+
+Pulled from body and facebook ad library manually to code each of the top 48 ads in Excel sheet linked included in Github
+
+```{r}
+meta_ads_expanded %>% 
+    filter(ad_delivery_start_time >= '2024-10-01',
+           low_spend >= 10000) %>% 
+    arrange(desc(low_spend)) %>% 
+  write_csv("top_oct_ad_spends.csv")
 ```
 
 
