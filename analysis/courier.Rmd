@@ -24,7 +24,7 @@ meta_ads_raw <- read_csv("../data/consolidated_ads_20241103_173021.csv") %>% cle
 
 # Visualizations
 
-# -----
+# --------
 
 # Courier comparisons
 
@@ -173,18 +173,21 @@ meta_ads_expanded <- meta_ads_expanded  %>%  mutate(
 
 meta_ads_expanded %>% 
     filter(ad_delivery_start_time >= '2024-01-01') %>% 
-  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
+  # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
   mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
     page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
+    page_name == "Olean Star" ~ "Star News",
+    page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
+    # Anything not above is considered metric media
+    .default = "Metric Media"
+  )) %>%
   filter(page_name == "The Keystone") %>% 
   ggplot(aes(x = female_total)) + 
   geom_histogram(bins =30, fill = "#08519C")+
   geom_vline(aes(xintercept = .5), linetype="dotted") +
-  labs(title = "Courier's Pennsylvania outlet targeted ads more toward women", 
-       subtitle = "The Keystone 2024 Meta ad count by percentage each ad targeting women") +
+  labs(title = "Courier's Pennsylvania outlet targeted ads toward women more than men", 
+       subtitle = "The Keystone 2024 Meta ad count by women targeted as a proportion of total audience") +
   xlab("Percentage of Women Targeting") +
   theme_minimal() +
   scale_x_continuous(labels = scales::percent_format()) +
@@ -203,9 +206,7 @@ meta_ads_expanded %>%
   annotate("curve", x = 0.3, y = 15, xend = 0.03, yend = 6, curvature = -0.25, arrow = arrow(length = unit(0.5, "cm"))) 
 
 ggsave("../img/keystone_dist.png", height = 6, width = 10)
-
 ```
-
 
 
 # Chart 4 - Monthly by Page Breakout for Courier
@@ -213,12 +214,15 @@ ggsave("../img/keystone_dist.png", height = 6, width = 10)
 ```{r}
 meta_ads_raw %>% 
     filter(ad_delivery_start_time >= '2024-08-01') %>% 
-  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
+  # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
   mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
     page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
+    page_name == "Olean Star" ~ "Star News",
+    page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
+    # Anything not above is considered metric media
+    .default = "Metric Media"
+  )) %>%
   filter(network == "Courier Newsroom") %>% 
   #group by week and network
   group_by(week = floor_date(ymd(ad_delivery_start_time), unit = "week"), page_name) %>% 
@@ -257,7 +261,7 @@ ggsave("../img/courier_state_spend.png", height = 6, width = 10)
 
 # Other analysis
 
-#-----
+# -----
 
 # Export data for inspection of GOTV
 
@@ -280,38 +284,43 @@ Quote: Before the final cut-off date for launching political ads, Courier spent 
 
 ```{r}
 meta_ads_expanded %>% 
-    filter(ad_delivery_start_time >= '2024-01-01') %>% 
-  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
-  mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
-    page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
-  filter(network == "Courier Newsroom",
+  filter(ad_delivery_start_time >= '2024-01-01',
+         page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post"),
          is.na(ad_delivery_end_time) | ad_delivery_end_time > "2024-11-03") %>% 
   summarize(low_spend = sum(low_spend), 
             count = n())
 ```
+
+# What was the impact of men-only ads? 
+
+Quote: 16 ads were targeting exclusively toward women
+
+```{r}
+meta_ads_expanded %>% 
+  filter(ad_delivery_start_time >= '2024-01-01',
+         page_name == "The Keystone",
+         female_total==0) %>% 
+  summarize(count = n(),
+            low_spend = sum(low_spend, na.rm = TRUE))
+```
+
+# Relentless
 
 
 ```{r}
 meta_ads_expanded %>% 
-    filter(ad_delivery_start_time >= '2024-01-01') %>% 
+    filter(ad_delivery_start_time >= '2024-01-01',
+           grepl("Relentless", ad_creative_bodies)) %>% 
   #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
-  mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
-    page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
-  filter(network == "Courier Newsroom",
-         is.na(ad_delivery_end_time) | ad_delivery_end_time > "2024-11-03") %>% 
-  group_by(day = date(ad_delivery_start_time)) %>% 
-  summarize(low_spend = sum(low_spend), 
-            count = n())
+  filter(page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post")) %>% 
+  summarize(count = n(),
+            low_spend = sum(low_spend, na.rm = TRUE))
 ```
 
+# -----
 
 # Alternative targeting image
+
 ```{r}
 meta_ads_expanded %>% 
     filter(ad_delivery_start_time >= '2024-01-01') %>% 
