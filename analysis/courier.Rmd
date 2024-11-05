@@ -29,26 +29,28 @@ meta_ads_raw <- read_csv("../data/consolidated_ads_20241103_173021.csv") %>% cle
 # Courier comparisons
 
 ```{r}
+courier_list <- c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") 
+
 meta_ads_raw %>% 
-  filter(year(ad_creation_time) %in% c(2020, 2022, 2024)) %>%
+  filter(year(ad_delivery_start_date) %in% c(2020, 2022, 2024)) %>%
   # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
   mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
+    page_name %in% courier_list ~ "Courier Newsroom",
     page_name == "The Morning Mirror" ~ "Star Spangled Media",
     page_name == "Olean Star" ~ "Star News",
     page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
     # Anything not above is considered metric media
     .default = "Metric Media"
   )) %>%
-  mutate(courier_flag = ifelse(network == "Courier Newsroom", "Courier Newsroom", "Other"),
-         year = year(ad_creation_time)) %>%
+  distinct(page_name, network)
+  mutate(courier_flag = ad_delivery_start_datez(network == "Courier Newsroom", "Courier Newsroom", "Other"),
+         year = year(ad_delivery_start_date)) %>%
   # Group by week and network
   group_by(network, courier_flag, year) %>%
   # Sum spend (we'll use low spend as a minimum)
-  summarize(upper_sum = sum(high_spend),
-            low_sum = sum(low_spend, na.rm = TRUE),
-            avg_sum = (sum(high_spend) + sum(low_spend))/2) %>%
+  summarize(low_sum = sum(low_spend, na.rm = TRUE)) %>%
   ungroup() %>%
+  #fill anything with NAs to make bar charts same size
   complete(year = c(2020, 2022, 2024), network, fill = list(low_sum = 0, upper_sum = 0, avg_sum = 0)) %>%
   ggplot(aes(x = factor(year), y = low_sum, fill = reorder(network, desc(low_sum)))) +
   geom_bar(stat = "identity", position = position_dodge(width = 1), width = 1) +
@@ -91,7 +93,10 @@ meta_ad_report <- read_csv("../data/FacebookAdLibraryReport_2024-10-30_US_last_3
 table <- meta_ad_report %>% 
   mutate(categorize_page = case_when(
     disclaimer %in% c("HARRIS FOR PRESIDENT", "HARRIS VICTORY FUND") ~ "Harris For President or Harris Victory Fund",
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
+    disclaimer == "Trump National Committee JFC" ~ "Donald J. Trump or Trump National Committee JFC",
+    page_name == "Donald J. Trump" ~ "Donald J. Trump or Trump National Committee JFC",
+    page_name == "Kamala Harris" ~ "Harris For President or Harris Victory Fund",
+    page_name %in% courier_list ~ "Courier Newsroom", 
     .default = page_name
   )) %>% 
   dplyr::group_by(categorize_page) %>% 

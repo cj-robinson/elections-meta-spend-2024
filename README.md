@@ -5,7 +5,7 @@ To analyze data from Courier Newsroom and other outlets since 2020, we utilized 
 
 To pull from the API, run import_requests.py in the api_pull folder first to create CSVs of the ads from each page_id listed. It will also parse low/high spend and impression ranges into seperate columns. Then run consolitdate.py to combine the CSVs into one. Make sure to change any folders in the top of the files.
 
-To get page IDs, we searched for Courier Newsroom and any of their local newsrooms in the [Meta Ad Library Report](https://www.facebook.com/ads/library/report/?source=nav-header) that had any spending in the past 90 days (as of November 3). For Metric Media and other networks, we followed the same logic. For Courier newsrooms, we found that the 'Disclaimer' could be either Courier Newsroom or the name of the local paper itself. Because of this, we may be undercounting papers from other networks that list themselves as the 'Disclaimer' and have no listed connection to the broader network. 
+To get page IDs, we searched for Courier Newsroom and any of their local newsrooms in the [Meta Ad Library Report](https://www.facebook.com/ads/library/report/?source=nav-header) that had any spending in the past 90 days (as of November 3). For Metric Media and other networks, we searched only for the wider network. For Courier newsrooms, we found that the 'Disclaimer' could be either Courier Newsroom or the name of the local paper itself. Because of this, we may be undercounting papers from other networks that list themselves as the 'Disclaimer' and have no listed connection to the broader network. 
 
 This data fuels every chart and statistic in the story aside from the main table of October spend.
 
