@@ -189,7 +189,7 @@ meta_ads_expanded %>%
   geom_histogram(bins =30, fill = "#08519C")+
   geom_vline(aes(xintercept = .5), linetype="dotted") +
   labs(title = "The Keystone's Meta ads reached more women than men", 
-       subtitle = "Ad count for Courier's newsroom by gender reach") +
+       subtitle = "Ad count for Courier's newsroom by gender reach, 2024") +
   xlab("Percentage of Women Reached of Total Population") +
   theme_minimal() +
   scale_x_continuous(labels = scales::percent_format()) +
@@ -299,13 +299,21 @@ Quote: 16 ads were targeting exclusively toward women
 
 ```{r}
 meta_ads_expanded %>% 
-  filter(ad_delivery_start_time >= '2024-10-01',
+  filter(ad_delivery_start_time >= '2024-01-01',
          page_name == "The Keystone",
          female_total + male_total > 0) %>% 
   group_by(male_only = ifelse(female_total==0, "male only","other"))%>% 
   summarize(count = n(),
             low_spend = sum(low_spend, na.rm = TRUE), 
             high_spend = sum(high_spend, na.rm = TRUE))
+```
+
+```{r}
+meta_ads_expanded %>% 
+  filter(ad_delivery_start_time >= '2024-01-01',
+         page_name == "The Keystone",
+         female_total + male_total > 0,
+         female_total == 0)
 ```
 
 # Relentless
