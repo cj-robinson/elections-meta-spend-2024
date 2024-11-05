@@ -29,22 +29,55 @@ meta_ads_raw <- read_csv("../data/consolidated_ads_20241103_173021.csv") %>% cle
 # Courier comparisons
 
 ```{r}
-courier_list <- c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") 
+courier_list <- c('The Keystone', 
+                  'The \'Gander Newsroom', 
+                  'UpNorthNews', 
+                  'Cardinal & Pine', 
+                  'The Copper Courier', 
+                  'Iowa Starting Line', 
+                  "The Nevadan", 
+                  "Granite Post") 
+
+metric_media_list <- c("Old Dominion News",
+                       "Ft Worth Times",
+                       "Central Bucks Today",
+                       "Tucson Standard",
+                       "PHX Reporter",
+                       "Empire State Today",
+                       "San Antonio Standard",
+                       "Silver State Times",
+                       "Great Lakes Wire",
+                       "Old North News",
+                       "Durham Reporter",
+                       "Altoona Times",
+                       "Houston Republic",
+                       "Southeast South Dakota News",
+                       "The Sconi",
+                       "Grand Canyon Times",
+                       "Peach Tree Times",
+                       "North Charlotte News",
+                       "Madison Reporter",
+                       "Maryland State Wire",
+                       "Centennial State News")
+
+ind_list <- c('The Michigan Independent', 
+              'The Pennsylvania Independent', 
+              'The Wisconsin Independent', 
+              'The Nebraska Independent', 
+              'The Montana Independent')
 
 meta_ads_raw %>% 
-  filter(year(ad_delivery_start_date) %in% c(2020, 2022, 2024)) %>%
+  filter(year(ad_delivery_start_time) %in% c(2020, 2022, 2024)) %>%
   # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
   mutate(network = case_when(
     page_name %in% courier_list ~ "Courier Newsroom",
     page_name == "The Morning Mirror" ~ "Star Spangled Media",
     page_name == "Olean Star" ~ "Star News",
-    page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
-    # Anything not above is considered metric media
-    .default = "Metric Media"
+    page_name %in% ind_list ~ "American Independent",
+    page_name %in% metric_media_list ~ "Metric Media"
   )) %>%
-  distinct(page_name, network)
-  mutate(courier_flag = ad_delivery_start_datez(network == "Courier Newsroom", "Courier Newsroom", "Other"),
-         year = year(ad_delivery_start_date)) %>%
+  mutate(courier_flag = ifelse(network == "Courier Newsroom", "Courier Newsroom", "Other"),
+         year = year(ad_delivery_start_time)) %>%
   # Group by week and network
   group_by(network, courier_flag, year) %>%
   # Sum spend (we'll use low spend as a minimum)
@@ -180,15 +213,6 @@ meta_ads_expanded %>%
     filter(ad_delivery_start_time >= '2024-01-01', 
            #make sure null demographic info is taken out
            male_total + female_total > 0) %>% 
-  # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
-  mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
-    page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    page_name == "Olean Star" ~ "Star News",
-    page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
-    # Anything not above is considered metric media
-    .default = "Metric Media"
-  )) %>%
   filter(page_name == "The Keystone") %>% 
   ggplot(aes(x = female_total)) + 
   geom_histogram(bins =30, fill = "#08519C")+
@@ -221,16 +245,7 @@ ggsave("../img/keystone_dist.png", height = 6, width = 10)
 ```{r}
 meta_ads_raw %>% 
     filter(ad_delivery_start_time >= '2024-08-01') %>% 
-  # Categorize newsrooms based on page names, starting with courier since they have a much smaller amount of newsrooms.
-  mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom",
-    page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    page_name == "Olean Star" ~ "Star News",
-    page_name %in% c('The Michigan Independent', 'The Pennsylvania Independent', 'The Wisconsin Independent', 'The Nebraska Independent', 'The Montana Independent') ~ "American Independent",
-    # Anything not above is considered metric media
-    .default = "Metric Media"
-  )) %>%
-  filter(network == "Courier Newsroom") %>% 
+  filter(page_name %in% courier_list) %>% 
   #group by week and network
   group_by(week = floor_date(ymd(ad_delivery_start_time), unit = "week"), page_name) %>% 
   #sum spend (we'll use low spend as a minimum)
@@ -292,7 +307,7 @@ Quote: Before the final cut-off date for launching political ads, Courier spent 
 ```{r}
 meta_ads_expanded %>% 
   filter(ad_delivery_start_time >= '2024-01-01',
-         page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post"),
+         page_name %in% courier_list,
          is.na(ad_delivery_end_time) | ad_delivery_end_time > "2024-11-03") %>% 
   summarize(low_spend = sum(low_spend), 
             count = n())
@@ -329,7 +344,7 @@ meta_ads_expanded %>%
     filter(ad_delivery_start_time >= '2024-01-01',
            grepl("Relentless", ad_creative_bodies)) %>% 
   #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
-  filter(page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post")) %>% 
+  filter(page_name %in% courier_list) %>% 
   summarize(count = n(),
             low_spend = sum(low_spend, na.rm = TRUE))
 ```
@@ -341,12 +356,6 @@ meta_ads_expanded %>%
 ```{r}
 meta_ads_expanded %>% 
     filter(ad_delivery_start_time >= '2024-10-01') %>% 
-  #categorizes newsrooms based on page names, starting with courier since they have a much smaller amt of newsrooms. 
-  mutate(network = case_when(
-    page_name %in% c('The Keystone', 'The \'Gander Newsroom', 'UpNorthNews', 'Cardinal & Pine', 'The Copper Courier', 'Iowa Starting Line', "The Nevadan", "Granite Post") ~ "Courier Newsroom", 
-    page_name == "The Morning Mirror" ~ "Star Spangled Media",
-    #anything not above is considered metric media
-    .default = "Metric Media")) %>% 
   filter(page_name == "The Keystone") %>% 
   mutate(female_total = case_when(
     female_total <= 0.1 ~ 1,
