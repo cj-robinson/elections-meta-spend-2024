@@ -1,4 +1,4 @@
-This repo holds files to pull, analyze and visualizations for the 2024 Meta Ad spend story on Courier Newsroom.
+This repo holds files to pull, analyze and visualize Meta ad spend data for a 2024 Columbia Journalism Review story on Courier Newsroom.
 
 # Pulling Meta Ad Library Data from the API
 To analyze data from Courier Newsroom and other outlets since 2020, we utilized a copy of the Meta Ad repo found here: https://github.com/Lejo1/facebook_ad_library.
